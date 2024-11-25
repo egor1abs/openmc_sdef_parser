@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "openmc_sdef_parser"
+version = "0.1.0"
+description = "MCNP to OpenMC SDEF conversion tool"
+authors = ["Egor Afanasenko <60288416+egor1abs@users.noreply.github.com>", "Alexandr Zharov <aszharov@users.noreply.github.com>"]
+license = "GNU AGPLv3"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+
+[build-system]
+requires = ["poetry-core", "matplotlib", "numpy"]
+build-backend = "poetry.core.masonry.api"
