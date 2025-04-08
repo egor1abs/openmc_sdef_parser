@@ -50,7 +50,7 @@ def parse_sdef(sdef_file,
     else:
         keyword_in_this_line = True
         
-        keywords_initial = ['POS', 'SDEF', 'RAD', 'ERG', 'EXT FRAD']
+        keywords_initial = ['POS', 'SDEF', 'RAD', 'ERG', 'EXT FRAD', 'WGT']
         
         # If the keyword is 'POS' or 'SDEF', replace '=' with a space for future split
         if keyword in keywords_initial:
@@ -66,7 +66,7 @@ def parse_sdef(sdef_file,
                     break
 
             # Split the line and extract the values
-            if keyword == 'SDEF' or keyword == 'RAD' or keyword == 'EXT FRAD':
+            if keyword == 'SDEF' or keyword == 'RAD' or keyword == 'EXT FRAD' or keyword == 'WGT':
                 elements = line.split()
             else:
                 elements = [elem for elem in line.split() if isfloat(elem)]
@@ -115,13 +115,13 @@ def sdef_template(sdef_file: str) -> dict:
     _z_bins = []
     _z_prob = []
 
-    sdef_dict = {'CEL': None, 'ERG': None}
+    sdef_dict = {'CEL': None, 'ERG': None, 'WGT': None}
     dist_dict = {'RAD': None, 'EXT FRAD': None}
     
     with open(sdef_file, 'r') as file:
         
         _sdef, last_string = parse_sdef(file, 'SDEF', data_type=str)
-    
+
         dist_flag = False
         
         for i, elem in enumerate(_sdef):
@@ -133,6 +133,8 @@ def sdef_template(sdef_file: str) -> dict:
                     sdef_dict[elem] = _sdef[i+1]
             elif elem == 'ERG':
                 sdef_dict[elem] = _sdef[i+1][1:]
+            elif elem == 'WGT':
+                sdef_dict[elem] = _sdef[i+1]
                 
         _origin, _ = parse_sdef(file, 'POS', initial_line=last_string)
         
@@ -175,6 +177,11 @@ def sdef_template(sdef_file: str) -> dict:
     energy = np.array(_energy)
     
     constraints = np.array(_constraints)
+    
+    if sdef_dict['WGT'] is None:
+        wgt = 1.0
+    else:
+        wgt = float(sdef_dict['WGT'])
 
     r_bins = np.array(_r_bins) 
     r_prob = np.array(_r_prob) 
@@ -189,5 +196,6 @@ def sdef_template(sdef_file: str) -> dict:
         'z_bins': z_bins,
         'r_prob': r_prob,
         'z_prob': z_prob,
+        'wgt': wgt,
         'constraints': constraints
     }

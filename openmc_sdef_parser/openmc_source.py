@@ -28,6 +28,7 @@ def make_openmc_source(
     z_bins = parsed_file['z_bins']
     r_prob = parsed_file['r_prob']
     z_prob = parsed_file['z_prob']
+    wgt = parsed_file['wgt']
     constraints = parsed_file['constraints']
     
     source_mesh = openmc.CylindricalMesh(
@@ -59,8 +60,8 @@ def make_openmc_source(
         source.angle = openmc.stats.Isotropic()
         source.energy = openmc.stats.Normal(energy[2] * 1e6, energy[1] / np.sqrt(2) * 1e6 ) # mean_energy[MeV] -> [eV], FWHM/(LN2)^0.5/2 -> sigma[MeV] -> [eV]
         source.space = openmc.stats.MeshSpatial(
-            mesh=source_mesh,  
-            strengths=np.reshape(probs.T, (count, )),  # 2D-array -> 1D-array of probabilities
+            mesh=source_mesh,
+            strengths=np.reshape(probs.T, (count, )) * wgt,  # 2D-array -> 1D-array of probabilities
             )
         if len(constraints) != 0:
             source.constraints['domain_type'] = 'cell'
