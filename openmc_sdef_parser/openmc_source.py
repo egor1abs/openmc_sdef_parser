@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def make_openmc_source(
     sdef_file: str,
-    normalize: bool = True,
+    normalize: bool = False,
     exclude_first: bool = False
 ) -> openmc.IndependentSource:
     
@@ -14,7 +14,7 @@ def make_openmc_source(
 
     Args:
         sdef_file (str): The path to the MCNP SDEF file.
-        normalize (bool, optional): Whether to normalize the source per 1. Defaults to True.
+        normalize (bool, optional): Whether to normalize the source per 1. Defaults to False.
         exclude_first (bool, optional): Whether to exclude the first z bin. Defaults to False, i.e. include the first z bin and exclude the last z bin. Defaults to False.
     Returns:
         openmc.IndependentSource: The openmc.IndependentSource object representing the fusion source.
@@ -62,6 +62,7 @@ def make_openmc_source(
         source.space = openmc.stats.MeshSpatial(
             mesh=source_mesh,
             strengths=np.reshape(probs.T, (count, )) * wgt,  # 2D-array -> 1D-array of probabilities
+            volume_normalized = False
             )
         if len(constraints) != 0:
             source.constraints['domain_type'] = 'cell'
