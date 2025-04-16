@@ -38,7 +38,7 @@ With this tool, you can convert a fusion neutron source from MCNP to OpenMC.
     - `sdef` is an openmc.IndependentSource object
 
 - `sdef_file` is the path to the SDEF file
-- `normalize` is whether to normalize the source per 1. Default is False.
+- `normalize` is whether to normalize the source probabilities per 1. Default is True.
 - `exclude_first` is whether to exclude the first z bin (vertical distribution). It may be useful in some cases. Default is False, i.e. include the first z bin and exclude the last z bin.
 
 ## Plotting

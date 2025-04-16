@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def make_openmc_source(
     sdef_file: str,
-    normalize: bool = False,
+    normalize: bool = True,
     exclude_first: bool = False
 ) -> openmc.IndependentSource:
     
@@ -14,7 +14,7 @@ def make_openmc_source(
 
     Args:
         sdef_file (str): The path to the MCNP SDEF file.
-        normalize (bool, optional): Whether to normalize the source per 1. Defaults to False.
+        normalize (bool, optional): Whether to normalize the source per 1. Defaults to True.
         exclude_first (bool, optional): Whether to exclude the first z bin. Defaults to False, i.e. include the first z bin and exclude the last z bin. Defaults to False.
     Returns:
         openmc.IndependentSource: The openmc.IndependentSource object representing the fusion source.
@@ -44,15 +44,17 @@ def make_openmc_source(
     else:
         extra = 0   
     
+    if normalize:
+        r_prob = r_prob / np.sum(r_prob)
+        for i in range(len(z_prob)):
+            z_prob[i] = z_prob[i] / np.sum(z_prob[i])
+    
     for i, j, k in source_mesh.indices:
         mesh_index = (i-1, j-1, k-1)
         # Multiplication of z and r probabilities to get probability for each mesh cell
-        probs[mesh_index] = z_prob[mesh_index[0]+extra][mesh_index[2]] * r_prob[mesh_index[0]] 
+        probs[mesh_index] = z_prob[mesh_index[0]+extra][mesh_index[2]] * r_prob[mesh_index[0]]
         count += 1
-    
-    if normalize:
-        probs = probs / np.sum(probs)
-    
+
     if energy[0] != -4:
         print('Unknown energy distribution. It must be -4 for fusion source.')
     else:
