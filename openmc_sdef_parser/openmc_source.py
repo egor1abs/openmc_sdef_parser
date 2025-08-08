@@ -4,7 +4,7 @@ import openmc
 import numpy as np
 import matplotlib.pyplot as plt
 
-def make_openmc_source(
+def make_openmc_tokamak_source(
     sdef_file: str,
     normalize: bool = True,
     exclude_first: bool = False
@@ -20,7 +20,7 @@ def make_openmc_source(
         openmc.IndependentSource: The openmc.IndependentSource object representing the fusion source.
     """
     
-    parsed_file = parse.sdef_template(sdef_file)
+    parsed_file = parse.sdef_tokamak_template(sdef_file)
     
     origin = parsed_file['origin']
     energy = parsed_file['energy']
@@ -73,7 +73,7 @@ def make_openmc_source(
         
         return source
 
-def plot_source(
+def plot_tokamak_source(
     source: openmc.IndependentSource,
     intensity_norm: bool = True,
     cmap: str = 'jet',
@@ -108,3 +108,45 @@ def plot_source(
                interpolation=interpolation,
                vmin=0)
     plt.colorbar()
+
+def make_openmc_point_source(
+    sdef_file: str,
+) -> openmc.IndependentSource:
+
+    """Creates an openmc.IndependentSource object from a MCNP SDEF file for a point source with anisotropic angular distribution.
+
+    Args:
+        sdef_file (str): The path to the MCNP SDEF file.
+    Returns:
+        openmc.IndependentSource: The openmc.IndependentSource object representing the point source.
+    """
+    
+    parsed_file = parse.sdef_ps_template(sdef_file)
+    
+    origin = parsed_file['origin']
+    dir = parsed_file['dir']
+    reference_uvw = parsed_file['reference_uvw']
+    angular_bins = parsed_file['angular_bins']
+    angular_prob = parsed_file['angular_prob']
+    spatial_bins = parsed_file['spatial_bins'] * 1e6 # [MeV] -> [eV]
+    spatial_prob = parsed_file['spatial_prob']
+    wgt = parsed_file['wgt'] # TODO: implement weight to OpenMC source
+    
+    if dir is None:
+        print('Unkown direction distribution...')
+    
+    source = openmc.IndependentSource()
+    source.space = openmc.stats.Point(origin)
+    
+    dir_dist = openmc.stats.Tabular(angular_bins, angular_prob, 'histogram')
+    source.angle = openmc.stats.PolarAzimuthal(mu=dir_dist, reference_uvw=reference_uvw)
+    
+    probs = spatial_prob.T * angular_prob[np.newaxis, :]
+    all_bins = np.tile(spatial_bins, (probs.shape[1], 1))
+
+    tabular_dists = [openmc.stats.Tabular(all_bins[i], probs[:, i], 'histogram') for i in range(probs.shape[1])]
+
+    energy_dist = openmc.stats.Mixture(angular_prob, tabular_dists)
+    source.energy = energy_dist
+    
+    return source
