@@ -130,23 +130,30 @@ def make_openmc_point_source(
     angular_prob = parsed_file['angular_prob']
     spatial_bins = parsed_file['spatial_bins'] * 1e6 # [MeV] -> [eV]
     spatial_prob = parsed_file['spatial_prob']
-    wgt = parsed_file['wgt'] # TODO: implement weight to OpenMC source
+    wgt = parsed_file['wgt'] # TODO: implement weight to OpenMC point source
     
     if dir is None:
-        print('Unkown direction distribution...')
+        print('Unkown distribution...') # TODO: add more information
     
     source = openmc.IndependentSource()
-    source.space = openmc.stats.Point(origin)
     
     dir_dist = openmc.stats.Tabular(angular_bins, angular_prob, 'histogram')
-    source.angle = openmc.stats.PolarAzimuthal(mu=dir_dist, reference_uvw=reference_uvw)
-    
-    probs = spatial_prob.T * angular_prob[np.newaxis, :]
-    all_bins = np.tile(spatial_bins, (probs.shape[1], 1))
+    probs = spatial_prob.T
+    all_bins = np.tile(spatial_bins, (angular_prob.shape[0], 1))
 
-    tabular_dists = [openmc.stats.Tabular(all_bins[i], probs[:, i], 'histogram') for i in range(probs.shape[1])]
+    tabular_dists = [openmc.stats.Tabular(all_bins[i], probs[:, i] / 1e6, 'histogram') for i in range(probs.shape[1])]
 
     energy_dist = openmc.stats.Mixture(angular_prob, tabular_dists)
-    source.energy = energy_dist
     
-    return source
+    sources = []
+
+    for i, probs in enumerate(angular_prob):
+        source = openmc.IndependentSource()
+        source.space = openmc.stats.Point(origin)
+        #source.space = openmc.stats.CylindricalIndependent(origin=origin, r=openmc.stats.PowerLaw(a=0, b=r, n=1), z=openmc.stats.Uniform(a=-x, b=x), phi=openmc.stats.Uniform(0., 2*np.pi))
+        source.energy = energy_dist.distribution[i]
+        source.angle = openmc.stats.PolarAzimuthal(mu=openmc.stats.Uniform(angular_bins[i], angular_bins[i+1]), reference_uvw=reference_uvw)
+        source.strength = probs
+        sources.append(source)
+    
+    return sources
